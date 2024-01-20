@@ -170,7 +170,7 @@ class SteamMarket:
         currency: Currency = Currency.USD,
     ) -> dict:
         data = {
-            'sessionid': self._session_id,
+            'sessionid': self._session.cookies.get_dict("steamcommunity.com")['sessionid'],
             'currency': currency.value,
             'subtotal': price - fee,
             'fee': fee,
