@@ -1,0 +1,12 @@
+# requirements.txt
+
+beautifulsoup4==4.12.3
+certifi==2023.11.17
+charset-normalizer==3.3.2
+idna==3.6
+pyasn1==0.5.1
+requests==2.31.0
+rsa==4.9
+soupsieve==2.5
+-e git+ssh://git@github.com/KolesniCow/steampy.git@10dd12e4e9023bdc4a90be35ab25ba55fb70c5a5#egg=steampy
+urllib3==2.1.0
