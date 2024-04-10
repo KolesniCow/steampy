@@ -174,6 +174,10 @@ class SteamClient:
             return self._session.cookies.get_dict("steamcommunity.com")['sessionid']
         except KeyError:
             return self._session.cookies.get('sessionid') # manual cookie loading fix
+    
+    @property
+    def session_id(self) -> str:
+        return self._get_session_id()
 
     def get_trade_offers_summary(self) -> dict:
         params = {'key': self._api_key}
