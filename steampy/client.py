@@ -110,6 +110,15 @@ class SteamClient:
         LoginExecutor(self.username, self._password, self.steam_guard['shared_secret'], self._session).login()
         self.was_login_executed = True
         self.market._set_login_executed(self.steam_guard, self._get_session_id())
+        steam_login_secure_cookies = [cookie for cookie in self._session.cookies if cookie.name == 'steamLoginSecure']
+        cookie_value = steam_login_secure_cookies[0].value
+        decoded_cookie_value = urlparse.unquote(cookie_value)
+        access_token_parts = decoded_cookie_value.split('||')
+        if len(access_token_parts) < 2:
+            print(decoded_cookie_value)
+            raise ValueError('Access token not found in steamLoginSecure cookie')
+        access_token = access_token_parts[1]
+        self._access_token = access_token
 
     @login_required
     def logout(self) -> None:
@@ -183,21 +192,28 @@ class SteamClient:
         params = {'key': self._api_key}
         return self.api_call('GET', 'IEconService', 'GetTradeOffersSummary', 'v1', params).json()
 
-    def get_trade_offers(self, merge: bool = True) -> dict:
-        params = {
-            'key': self._api_key,
-            'get_sent_offers': 1,
-            'get_received_offers': 1,
-            'get_descriptions': 1,
-            'language': 'english',
-            'active_only': 1,
-            'historical_only': 0,
-            'time_historical_cutoff': '',
-        }
-        response = self.api_call('GET', 'IEconService', 'GetTradeOffers', 'v1', params).json()
+    def get_trade_offers(self, merge: bool = True, sent:int=1, received:int=1, use_webtoken=True) -> dict:
+        params = {'key'if not use_webtoken else 'access_token': self._api_key if not use_webtoken else self._access_token,
+                  'get_sent_offers': sent,
+                  'get_received_offers': received,
+                  'get_descriptions': 1,
+                  'language': 'english',
+                  'active_only': 1,
+                  'historical_only': 0,
+                  'time_historical_cutoff': ''}
+        try:
+            response = self.api_call('GET', 'IEconService', 'GetTradeOffers', 'v1', params)
+
+            response = response.json()
+
+        except json.decoder.JSONDecodeError:
+            time.sleep(2)
+            return self.get_trade_offers(merge, sent, received)
         response = self._filter_non_active_offers(response)
 
-        return merge_items_with_descriptions_from_offers(response) if merge else response
+        if merge:
+            response = merge_items_with_descriptions_from_offers(response)
+        return response
 
     @staticmethod
     def _filter_non_active_offers(offers_response):
